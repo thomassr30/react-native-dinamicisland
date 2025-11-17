@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ReactNativeDinamicislandModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.dinamicisland.ReactNativeDinamicislandModule"]
+  }
+}

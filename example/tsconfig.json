@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "react-native-dinamicisland": ["../src/index"],
+      "react-native-dinamicisland/*": ["../src/*"]
+    }
+  }
+}
