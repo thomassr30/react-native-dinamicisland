@@ -25,37 +25,38 @@ A powerful React Native library for controlling iOS Dynamic Island through Live 
 
 ## 📦 Installation
 
+### Quick Install (5 minutes)
+
 ```bash
+# 1. Install the package
 npm install react-native-dinamicisland
-# or
-yarn add react-native-dinamicisland
-```
 
-## ⚙️ Configuration
-
-Add the plugin to your [app.json](./example/app.json) or `app.config.ts`:
-
-```typescript
-export default {
-  expo: {
-    plugins: [
-      [
-        'react-native-dinamicisland',
-        {
-          enableLiveActivities: true
-        }
-      ]
-    ]
+# 2. Add to your app.json
+{
+  "expo": {
+    "plugins": ["react-native-dinamicisland"]
   }
-};
-```
+}
 
-Then rebuild your app:
-
-```bash
+# 3. Prebuild
 npx expo prebuild -p ios --clean
-npx expo run:ios
+
+# 4. One-time setup in Xcode (only needed once)
+# See detailed guide: INSTALLATION.md
 ```
+
+⚠️ **Important**: Due to Apple's requirements, you need to create a Widget Extension target in Xcode **once**. This is a 2-minute process. After that, everything is automatic.
+
+📖 **[Complete Installation Guide →](./INSTALLATION.md)**
+
+### Why Xcode Setup?
+
+Apple requires Widget Extensions to be separate targets in Xcode. This cannot be automated. However:
+
+- ✅ Setup takes 2-5 minutes, **only once per project**
+- ✅ All configuration is automatic via Expo Config Plugin
+- ✅ Future updates are completely automatic
+- ✅ Same requirement for all iOS widget libraries
 
 ## 🚀 Quick Start
 
