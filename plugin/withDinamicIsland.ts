@@ -3,6 +3,7 @@ import {
   withEntitlementsPlist,
   withInfoPlist,
 } from '@expo/config-plugins';
+import { withDinamicIslandWidget } from './withDinamicIslandWidget';
 
 /**
  * Configuration options for the Dynamic Island plugin
@@ -10,6 +11,9 @@ import {
 export type DinamicIslandPluginProps = {
   /** Whether to enable Live Activities (default: true) */
   enableLiveActivities?: boolean;
+
+  /** Whether to automatically create Widget Extension (default: true) */
+  autoCreateWidget?: boolean;
 };
 
 /**
@@ -50,6 +54,9 @@ const withDinamicIslandInfoPlist: ConfigPlugin<DinamicIslandPluginProps> = (
     config.modResults.NSUserNotificationUsageDescription =
       config.modResults.NSUserNotificationUsageDescription ??
       'This app uses notifications to show live activities on your Dynamic Island and lock screen.';
+
+    config.modResults.NSSupportsLiveActivities = true;
+
     return config;
   });
 };
@@ -57,6 +64,7 @@ const withDinamicIslandInfoPlist: ConfigPlugin<DinamicIslandPluginProps> = (
 /**
  * Main Config Plugin for react-native-dinamicisland
  * This plugin automatically configures your Expo app to support Live Activities
+ * and creates the Widget Extension target automatically
  *
  * @example
  * // In app.json or app.config.ts
@@ -68,10 +76,17 @@ const withDinamicIslandInfoPlist: ConfigPlugin<DinamicIslandPluginProps> = (
  */
 const withDinamicIsland: ConfigPlugin<DinamicIslandPluginProps> = (
   config,
-  props
+  props = {}
 ) => {
+  // Apply entitlements and Info.plist configurations
   config = withDinamicIslandEntitlements(config, props);
   config = withDinamicIslandInfoPlist(config, props);
+
+  // Automatically create and configure Widget Extension
+  if (props.autoCreateWidget !== false) {
+    config = withDinamicIslandWidget(config);
+  }
+
   return config;
 };
 

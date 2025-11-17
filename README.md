@@ -25,7 +25,7 @@ A powerful React Native library for controlling iOS Dynamic Island through Live 
 
 ## 📦 Installation
 
-### Quick Install (5 minutes)
+### ⚡ Automatic Installation (2 minutes)
 
 ```bash
 # 1. Install the package
@@ -38,25 +38,21 @@ npm install react-native-dinamicisland
   }
 }
 
-# 3. Prebuild
+# 3. Prebuild (creates Widget Extension automatically)
 npx expo prebuild -p ios --clean
 
-# 4. One-time setup in Xcode (only needed once)
-# See detailed guide: INSTALLATION.md
+# 4. Run!
+npx expo run:ios --device
 ```
 
-⚠️ **Important**: Due to Apple's requirements, you need to create a Widget Extension target in Xcode **once**. This is a 2-minute process. After that, everything is automatic.
+✅ **That's it!** The Config Plugin automatically:
+- Creates the Widget Extension target
+- Configures all entitlements
+- Sets up Info.plist
+- Adds all Swift files
+- Configures build settings
 
-📖 **[Complete Installation Guide →](./INSTALLATION.md)**
-
-### Why Xcode Setup?
-
-Apple requires Widget Extensions to be separate targets in Xcode. This cannot be automated. However:
-
-- ✅ Setup takes 2-5 minutes, **only once per project**
-- ✅ All configuration is automatic via Expo Config Plugin
-- ✅ Future updates are completely automatic
-- ✅ Same requirement for all iOS widget libraries
+No Xcode needed! 🎉
 
 ## 🚀 Quick Start
 
