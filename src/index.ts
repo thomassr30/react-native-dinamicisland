@@ -61,5 +61,6 @@ export async function endActivity(dismiss: boolean = true): Promise<boolean> {
   return ReactNativeDinamicisland.endActivity(dismiss);
 }
 
-// Re-export types for convenience
+// Re-export types and hooks for convenience
 export * from './types';
+export { useDynamicIslandActivity } from './hooks/useDynamicIslandActivity';
