@@ -20,12 +20,34 @@ export const withDinamicIslandWidget: ConfigPlugin = (config) => {
     const widgetPath = path.join(iosPath, 'DinamicIslandWidget');
     const modulePath = path.join(projectRoot, 'node_modules', 'react-native-dinamicisland');
 
-    // Create Widget directory
-    if (!fs.existsSync(widgetPath)) {
-      fs.mkdirSync(widgetPath, { recursive: true });
+    // Validate that node_modules path exists
+    if (!fs.existsSync(modulePath)) {
+      throw new Error(
+        `react-native-dinamicisland module not found at ${modulePath}. ` +
+        'Please ensure the package is properly installed via npm or yarn.'
+      );
     }
 
-    // Copy Widget files
+    // Validate that iOS directory exists
+    if (!fs.existsSync(iosPath)) {
+      throw new Error(
+        `iOS directory not found at ${iosPath}. ` +
+        'Please run "npx expo prebuild -p ios" to generate the iOS project first.'
+      );
+    }
+
+    // Create Widget directory with error handling
+    try {
+      if (!fs.existsSync(widgetPath)) {
+        fs.mkdirSync(widgetPath, { recursive: true });
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to create Widget directory at ${widgetPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+
+    // Copy Widget files with validation
     const widgetFiles = [
       'DinamicIslandWidget.swift',
       'DinamicIslandWidgetBundle.swift',
@@ -35,17 +57,39 @@ export const withDinamicIslandWidget: ConfigPlugin = (config) => {
       const sourcePath = path.join(modulePath, 'ios', 'Widgets', file);
       const destPath = path.join(widgetPath, file);
 
-      if (fs.existsSync(sourcePath)) {
+      if (!fs.existsSync(sourcePath)) {
+        throw new Error(
+          `Required Widget file not found: ${sourcePath}. ` +
+          'The react-native-dinamicisland package may be corrupted. Try reinstalling it.'
+        );
+      }
+
+      try {
         fs.copyFileSync(sourcePath, destPath);
+      } catch (error) {
+        throw new Error(
+          `Failed to copy ${file} from ${sourcePath} to ${destPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
 
-    // Copy ActivityAttributes to main iOS folder
+    // Copy ActivityAttributes to main iOS folder with validation
     const attributesSource = path.join(modulePath, 'ios', 'DinamicIslandActivityAttributes.swift');
     const attributesDest = path.join(iosPath, 'DinamicIslandActivityAttributes.swift');
 
-    if (fs.existsSync(attributesSource)) {
+    if (!fs.existsSync(attributesSource)) {
+      throw new Error(
+        `Required ActivityAttributes file not found: ${attributesSource}. ` +
+        'The react-native-dinamicisland package may be corrupted. Try reinstalling it.'
+      );
+    }
+
+    try {
       fs.copyFileSync(attributesSource, attributesDest);
+    } catch (error) {
+      throw new Error(
+        `Failed to copy ActivityAttributes from ${attributesSource} to ${attributesDest}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     // Create Widget Info.plist
@@ -81,10 +125,24 @@ export const withDinamicIslandWidget: ConfigPlugin = (config) => {
 </dict>
 </plist>`;
 
-    fs.writeFileSync(path.join(widgetPath, 'Info.plist'), infoPlist);
+    try {
+      fs.writeFileSync(path.join(widgetPath, 'Info.plist'), infoPlist);
+    } catch (error) {
+      throw new Error(
+        `Failed to create Widget Info.plist at ${widgetPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
 
     // Get bundle identifier from main app
     const appBundleId = IOSConfig.BundleIdentifier.getBundleIdentifier(config);
+
+    if (!appBundleId) {
+      throw new Error(
+        'Could not determine app bundle identifier. ' +
+        'Please ensure your app.json or app.config.js has a valid "ios.bundleIdentifier" set.'
+      );
+    }
+
     const widgetBundleId = `${appBundleId}.DinamicIslandWidget`;
 
     // Add Widget Extension Target to Xcode project

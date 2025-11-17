@@ -43,6 +43,25 @@ public class ReactNativeDinamicislandModule: Module {
         throw DinamicislandError.notSupported
       }
 
+      // Validate inputs
+      guard !activityId.isEmpty && activityId.count <= 100 else {
+        throw DinamicislandError.invalidInput("Activity ID must be between 1-100 characters")
+      }
+
+      guard !title.isEmpty && title.count <= 200 else {
+        throw DinamicislandError.invalidInput("Title must be between 1-200 characters")
+      }
+
+      if let subtitle = subtitle, subtitle.count > 300 {
+        throw DinamicislandError.invalidInput("Subtitle must not exceed 300 characters")
+      }
+
+      if let progress = progress {
+        guard progress >= 0.0 && progress <= 1.0 else {
+          throw DinamicislandError.invalidInput("Progress must be between 0.0 and 1.0")
+        }
+      }
+
       let attributes = DinamicIslandActivityAttributes(activityId: activityId)
 
       let state = DinamicIslandActivityAttributes.ContentState(
@@ -82,6 +101,23 @@ public class ReactNativeDinamicislandModule: Module {
         return false
       }
 
+      // Validate inputs
+      if let title = title {
+        guard !title.isEmpty && title.count <= 200 else {
+          throw DinamicislandError.invalidInput("Title must be between 1-200 characters")
+        }
+      }
+
+      if let subtitle = subtitle, subtitle.count > 300 {
+        throw DinamicislandError.invalidInput("Subtitle must not exceed 300 characters")
+      }
+
+      if let progress = progress {
+        guard progress >= 0.0 && progress <= 1.0 else {
+          throw DinamicislandError.invalidInput("Progress must be between 0.0 and 1.0")
+        }
+      }
+
       var newState = activity.content.state
 
       // Only update fields that were provided
@@ -118,11 +154,14 @@ public class ReactNativeDinamicislandModule: Module {
 /// Custom errors specific to Dynamic Island operations
 enum DinamicislandError: Error, LocalizedError {
   case notSupported
+  case invalidInput(String)
 
   var errorDescription: String? {
     switch self {
     case .notSupported:
       return "Live Activities are only supported on iOS 16.1 or later. Please update your device to use this feature."
+    case .invalidInput(let message):
+      return "Invalid input: \(message)"
     }
   }
 }
