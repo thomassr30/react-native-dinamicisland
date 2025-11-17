@@ -169,7 +169,7 @@ export const withDinamicIslandWidget: ConfigPlugin = (config) => {
 
       // Add Swift files
       widgetFiles.forEach(file => {
-        const fileRef = xcodeProject.addFile(
+        xcodeProject.addFile(
           path.join('DinamicIslandWidget', file),
           widgetGroup,
           { target: widgetTarget.uuid }

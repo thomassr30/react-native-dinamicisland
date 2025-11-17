@@ -296,22 +296,144 @@ await start({
 
 ### "Live Activities not showing"
 
-1. Ensure you're on iOS 16.1+ on a supported device
-2. Check that Live Activities are enabled in Settings > Face ID & Passcode
-3. Make sure you ran `npx expo prebuild` after installation
-4. Verify entitlements are correctly configured in Xcode
+1. **Check iOS Version**: Ensure you're on iOS 16.1+ on a supported device
+   ```typescript
+   const supported = await isSupported();
+   console.log('Live Activities supported:', supported);
+   ```
 
-### "Module not found"
+2. **Check System Settings**:
+   - Go to Settings > Face ID & Passcode
+   - Scroll down to "Live Activities"
+   - Ensure it's enabled
 
-Run these commands:
+3. **Verify Installation**:
+   ```bash
+   # Clean and rebuild
+   npx expo prebuild -p ios --clean
+   npx expo run:ios --device
+   ```
+
+4. **Check Entitlements**: Open your iOS project in Xcode and verify:
+   - Main app has `com.apple.developer.activity-types: ['liveActivities']`
+   - Widget Extension exists and is configured
+   - Both targets have matching team and bundle IDs
+
+### "Module not found" or "Native module cannot be null"
+
+This usually means the native module isn't linked properly:
+
 ```bash
+# Solution 1: Clean rebuild
 npx expo prebuild -p ios --clean
-npx expo run:ios
+cd ios && pod install && cd ..
+npx expo run:ios --device
+
+# Solution 2: If using development build
+npx expo install --fix
+eas build --profile development --platform ios
+```
+
+### "Plugin error during prebuild"
+
+If the Config Plugin fails:
+
+1. **Check package installation**:
+   ```bash
+   npm ls react-native-dinamicisland
+   # Should show version 1.0.0 or higher
+   ```
+
+2. **Verify app.json plugin configuration**:
+   ```json
+   {
+     "expo": {
+       "plugins": ["react-native-dinamicisland"]
+     }
+   }
+   ```
+
+3. **Check for conflicting plugins**: Some plugins may conflict. Try disabling other plugins temporarily.
+
+### Input Validation Errors
+
+If you see errors like "Title must not exceed 200 characters":
+
+```typescript
+// ❌ Wrong - exceeds limits
+await startActivity({
+  activityId: 'a'.repeat(101),  // Too long!
+  title: 'Very long title...'.repeat(50),  // Too long!
+  progress: 1.5  // Invalid range!
+});
+
+// ✅ Correct - within limits
+await startActivity({
+  activityId: 'music-player',  // 1-100 chars
+  title: 'Now Playing',  // 1-200 chars
+  subtitle: 'Artist - Song',  // 0-300 chars
+  progress: 0.5  // 0.0-1.0
+});
 ```
 
 ### Testing on Simulator
 
-Dynamic Island will not show on simulator, but Live Activities will appear in the notification center. For full testing, use a physical device with Dynamic Island (iPhone 14 Pro or newer).
+**Important**: Dynamic Island hardware is NOT available in iOS Simulator.
+
+- ✅ Live Activities will appear in **Notification Center**
+- ✅ You can test the **lock screen widget**
+- ❌ Dynamic Island UI will **NOT show** (requires physical device)
+
+For full testing, use a physical device:
+- iPhone 14 Pro / 14 Pro Max
+- iPhone 15 Pro / 15 Pro Max
+- Any future iPhone with Dynamic Island
+
+### Common Development Issues
+
+#### Activity not updating
+
+```typescript
+// Make sure you're calling update, not start again
+const id = await startActivity({ activityId: 'test', title: 'Initial' });
+
+// ✅ Correct - update existing
+await updateActivity({ title: 'Updated' });
+
+// ❌ Wrong - this creates a NEW activity
+await startActivity({ activityId: 'test', title: 'Updated' });
+```
+
+#### Multiple activities
+
+Currently, this library supports **one active activity at a time**. Starting a new activity while one is active will replace it.
+
+```typescript
+// First activity
+await startActivity({ activityId: 'music', title: 'Music' });
+
+// This replaces the first activity
+await startActivity({ activityId: 'timer', title: 'Timer' });
+```
+
+### Getting Help
+
+1. **Check the logs**:
+   ```bash
+   npx expo run:ios --device
+   # Watch for error messages
+   ```
+
+2. **Enable verbose logging**:
+   ```bash
+   npx expo run:ios --device --verbose
+   ```
+
+3. **Report issues**: https://github.com/thomassr30/react-native-dinamicisland/issues
+   - Include error messages
+   - Include iOS version
+   - Include device model
+   - Include code snippet that reproduces the issue
 
 ## 🗺️ Roadmap
 
