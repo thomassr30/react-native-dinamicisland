@@ -1,48 +1,128 @@
+import ActivityKit
 import ExpoModulesCore
 
+/// The main Expo module that bridges ActivityKit functionality to JavaScript
+/// This module allows React Native apps to control Dynamic Island Live Activities
 public class ReactNativeDinamicislandModule: Module {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
+
+  /// Keeps track of the currently active Live Activity
+  /// We maintain a reference to update or end it later
+  private var currentActivity: Activity<DinamicIslandActivityAttributes>?
+
   public func definition() -> ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('ReactNativeDinamicisland')` in JavaScript.
     Name("ReactNativeDinamicisland")
 
-    // Defines constant property on the module.
-    Constant("PI") {
-      Double.pi
+    /// Checks if Live Activities are supported and enabled on this device
+    /// Live Activities require iOS 16.1+ and must be enabled by the user
+    /// - Returns: true if activities are supported and enabled, false otherwise
+    AsyncFunction("isSupported") { () -> Bool in
+      if #available(iOS 16.1, *) {
+        return ActivityAuthorizationInfo().areActivitiesEnabled
+      }
+      return false
     }
 
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
-
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      return "Hello world! 👋"
-    }
-
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { (value: String) in
-      // Send an event to JavaScript.
-      self.sendEvent("onChange", [
-        "value": value
-      ])
-    }
-
-    // Enables the module to be used as a native view. Definition components that are accepted as part of the
-    // view definition: Prop, Events.
-    View(ReactNativeDinamicislandView.self) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { (view: ReactNativeDinamicislandView, url: URL) in
-        if view.webView.url != url {
-          view.webView.load(URLRequest(url: url))
-        }
+    /// Starts a new Live Activity with the specified content
+    /// This will show the Dynamic Island and lock screen widgets
+    /// - Parameters:
+    ///   - activityId: Unique identifier for this activity
+    ///   - title: Main text to display
+    ///   - subtitle: Optional secondary text
+    ///   - style: Optional style identifier for different visual presets
+    ///   - progress: Optional progress value (0.0 to 1.0)
+    /// - Returns: The system-generated activity ID
+    /// - Throws: DinamicislandError.notSupported if iOS version is too old
+    AsyncFunction("startActivity") { (
+      activityId: String,
+      title: String,
+      subtitle: String?,
+      style: String?,
+      progress: Double?
+    ) throws -> String in
+      guard #available(iOS 16.1, *) else {
+        throw DinamicislandError.notSupported
       }
 
-      Events("onLoad")
+      let attributes = DinamicIslandActivityAttributes(activityId: activityId)
+
+      let state = DinamicIslandActivityAttributes.ContentState(
+        title: title,
+        subtitle: subtitle,
+        progress: progress,
+        style: style
+      )
+
+      let content = ActivityContent(state: state, staleDate: nil)
+
+      let activity = try Activity.request(
+        attributes: attributes,
+        content: content
+      )
+
+      self.currentActivity = activity
+      return activity.id
+    }
+
+    /// Updates the content of the currently active Live Activity
+    /// This refreshes the Dynamic Island and lock screen displays
+    /// - Parameters:
+    ///   - title: New title text (optional, keeps current if nil)
+    ///   - subtitle: New subtitle text (optional, keeps current if nil)
+    ///   - style: New style identifier (optional, keeps current if nil)
+    ///   - progress: New progress value (optional, keeps current if nil)
+    /// - Returns: true if update was successful, false if no active activity
+    AsyncFunction("updateActivity") { (
+      title: String?,
+      subtitle: String?,
+      style: String?,
+      progress: Double?
+    ) async throws -> Bool in
+      guard #available(iOS 16.1, *),
+            let activity = self.currentActivity else {
+        return false
+      }
+
+      var newState = activity.content.state
+
+      // Only update fields that were provided
+      if let title = title { newState.title = title }
+      if let subtitle = subtitle { newState.subtitle = subtitle }
+      if let style = style { newState.style = style }
+      if let progress = progress { newState.progress = progress }
+
+      let content = ActivityContent(state: newState, staleDate: nil)
+      await activity.update(content)
+
+      return true
+    }
+
+    /// Ends the currently active Live Activity
+    /// This removes the Dynamic Island and lock screen displays
+    /// - Parameter dismiss: If true, removes immediately; if false, uses default dismissal policy
+    /// - Returns: true if activity was ended successfully, false if no active activity
+    AsyncFunction("endActivity") { (dismiss: Bool) async throws -> Bool in
+      guard #available(iOS 16.1, *),
+            let activity = self.currentActivity else {
+        return false
+      }
+
+      await activity.end(nil, dismissalPolicy: dismiss ? .immediate : .default)
+      self.currentActivity = nil
+      return true
+    }
+  }
+}
+
+// MARK: - Error Handling
+
+/// Custom errors specific to Dynamic Island operations
+enum DinamicislandError: Error, LocalizedError {
+  case notSupported
+
+  var errorDescription: String? {
+    switch self {
+    case .notSupported:
+      return "Live Activities are only supported on iOS 16.1 or later. Please update your device to use this feature."
     }
   }
 }
